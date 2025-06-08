@@ -1,5 +1,10 @@
+using System.Text.Json;
+using AICustomerReviewResponser.DataLayer;
+using AICustomerReviewResponser.Models;
 using AICustomerReviewResponser.options;
 using AICustomerReviewResponser.Services;
+using Google.Apis.Util;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
@@ -11,18 +16,19 @@ namespace AICustomerReviewResponser.Brain
 {
     public interface IBrain
     {
-        void ProcessInput(string input);
-        Task<string> GenerateReviewResponse();
+        Task ProcessReviews();
+        Task<string> GenerateReviewResponse(CustomerReview customerReview);
     }
 
     public class Brain(
         ILogger<Brain> logger,
         // IOptions<OpenAIConfiguration> options,
-        [FromKernelServices("CustomerReviewResponser")]
-            Kernel kernel
+        [FromKeyedServices("CustomerReviewResponser")]
+            Kernel kernel,
+        ICustomerReviewDataStore customerReviewDataStore
     ) : IBrain
     {
-        public async Task<string> GenerateReviewResponse()
+        public async Task<string> GenerateReviewResponse(CustomerReview customerReview)
         {
             logger.LogInformation("Started the customer review processor");
             var chatHistory = new ChatHistory();
@@ -43,11 +49,7 @@ namespace AICustomerReviewResponser.Brain
                 Name = "ContosoChatPrompt",
             };
 
-            var arguments = new KernelArguments()
-            {
-                // { "userMessage", userMessage },
-                // { "history", summary.ToString() },
-            };
+            var arguments = new KernelArguments() { { "userReview", customerReview } };
             // Render the prompt
             var promptTemplate = templateFactory.Create(promptTemplateConfig);
             var renderedPrompt = await promptTemplate.RenderAsync(kernel, arguments);
@@ -63,9 +65,27 @@ namespace AICustomerReviewResponser.Brain
             return chatMessage.Content ?? string.Empty;
         }
 
-        public void ProcessInput(string input)
+        public async Task ProcessReviews()
         {
-            throw new NotImplementedException();
+            var customerReviews = await customerReviewDataStore.GetAllCustomerReviewsAsync();
+            foreach (CustomerReview customerReview in customerReviews)
+            {
+                var response = await GenerateReviewResponse(customerReview);
+                var responseJson =
+                    JsonSerializer.Deserialize<SentimentAnalysisResponseDto>(response)
+                    ?? throw new ArgumentNullException(nameof(SentimentAnalysisResponseDto));
+
+                customerReview.AgentResponse = responseJson.AgentResponse;
+                customerReview.UpdatedAt = DateTime.UtcNow;
+                customerReview.OverallSentiment = responseJson.OverallSentiment;
+                customerReview.PositivityScore = responseJson.PositivityScore;
+                customerReview.NegativityScore = responseJson.NegativityScore;
+                customerReview.NeutralScore = responseJson.NeutralScore;
+
+                await customerReviewDataStore.UpdateCustomerReviewAsync(customerReview);
+
+                logger.LogInformation("Data updated for the customer review {response}", response);
+            }
         }
     }
 }

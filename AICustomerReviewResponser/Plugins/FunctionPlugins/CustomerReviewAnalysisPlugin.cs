@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using AICustomerReviewResponser.DataLayer;
 using AICustomerReviewResponser.options;
 using AICustomerReviewResponser.Services;
 using Microsoft.Extensions.Logging;
@@ -19,7 +20,7 @@ public class CustomerReviewAnalysisPlugin(
         "analyze the customer review, perform sentiment analysis, respond to the customer review"
     )]
     public async Task<FunctionResult> AnalyzeCustomerReview(
-        [Description("customer review ")] string customerReview,
+        [Description("customer review object")] CustomerReview customerReview,
         Kernel kernel
     )
     {

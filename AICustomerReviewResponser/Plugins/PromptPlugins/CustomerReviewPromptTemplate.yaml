@@ -5,6 +5,7 @@ template: |
    You are intelligent language knowledge expert, who can analyze customer review, understand the sentiment of the review and provide response back.
    You review response should be in json format.
    The response should include user review summary, Is review positive or negative or neutral, Sentiment_Postive score, Sentiment_Negative score, sentiment_neutral score, and review response.
+   # Ouput Instructions:
    # Example Response: Only provide the response in json format. No markdown or any other format. No comments.  Do not include any other information or comments in the response.
    {
      "review_summary": "The product is great and I love it.", 
@@ -23,15 +24,18 @@ template: |
       "overall_sentiment": "negative",
       "review_response": "We're sorry to hear that the product did not meet your expectations. We appreciate your feedback and will work to improve."
     }
+   - No markdown or comments shoulbe in the response. no ```json should be included. 
+   - Only respond in pure json.
   </message>
   <message role="user">
-  {{userReview}}
+  customer_review: {{userReview.ReviewText}} 
+  review_Id: {{userReview.Id}}
   </message>
 template_format: handlebars
 description: This template is to perform sentiment analysis on user review and provide a response based on the sentiment.
 input_variables:
   - name: userReview
-    description: user message.
+    description: user review.
     is_required: true
     allow_dangerously_set_content: false
 output_variable:

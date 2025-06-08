@@ -26,6 +26,7 @@
     <PackageReference Include="Microsoft.SemanticKernel.Plugins.Web" Version="1.50.0-alpha" />
     <PackageReference Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.50.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Yaml" Version="1.50.0" />
+    <PackageReference Include="MongoDB.Driver" Version="3.4.0" />
   </ItemGroup>
 
   <ItemGroup>
